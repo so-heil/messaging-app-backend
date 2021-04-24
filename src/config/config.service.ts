@@ -2,6 +2,11 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 import * as dotenv from 'dotenv';
 import { join } from 'path';
+import { Chat } from 'src/chats/chats.entity';
+import { Contact } from 'src/contacts/contacts.entity';
+import { Message } from 'src/messages/messages.entity';
+import { Session } from 'src/session/session.entity';
+import { User } from 'src/users/user.entity';
 dotenv.config();
 
 class ConfigService {
@@ -9,11 +14,7 @@ class ConfigService {
 
   private getValue(key: string, throwOnMissing = true): string {
     const value = this.env[key];
-    if (!value && throwOnMissing) {
-      throw new Error(`config error - missing env.${key}`);
-    }
-
-    return value;
+    return value ?? '';
   }
 
   public ensureValues(keys: string[]) {
@@ -40,17 +41,18 @@ class ConfigService {
       password: this.getValue('POSTGRES_PASSWORD'),
       database: this.getValue('POSTGRES_DATABASE'),
 
-      entities: [join(__dirname, '**', '*.entity.{ts,js}')],
+      entities: [User, Chat, Message, Session, Contact],
 
-      migrationsTableName: 'migration',
+      // migrationsTableName: 'migration',
 
-      migrations: ['src/migration/*.ts'],
+      // migrations: ['src/migration/*.ts'],
 
-      cli: {
-        migrationsDir: 'src/migration',
-      },
+      // cli: {
+      //   migrationsDir: 'src/migration',
+      // },
 
-      ssl: this.isProduction(),
+      // ssl: this.isProduction(),
+      synchronize: true,
     };
   }
 }
