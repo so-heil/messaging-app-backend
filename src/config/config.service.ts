@@ -43,16 +43,16 @@ class ConfigService {
 
       entities: [User, Chat, Message, Session, Contact],
 
-      // migrationsTableName: 'migration',
+      migrationsTableName: 'migration',
 
-      // migrations: ['src/migration/*.ts'],
+      migrations: ['src/migration/*.ts'],
 
-      // cli: {
-      //   migrationsDir: 'src/migration',
-      // },
+      cli: {
+        migrationsDir: 'src/migration',
+      },
 
-      // ssl: this.isProduction(),
-      synchronize: true,
+      ssl: this.isProduction(),
+      synchronize: !this.isProduction(),
     };
   }
 }

@@ -8,12 +8,11 @@ import { DISCONNECT_EVENT } from '@nestjs/websockets/constants';
 import { fromEvent, Observable } from 'rxjs';
 import { filter, first, map, mergeMap, share, takeUntil } from 'rxjs/operators';
 import { Server } from 'socket.io';
+import { CustomOrigin } from '@nestjs/common/interfaces/external/cors-options.interface';
 
+// TODO: Using this until socket.io v3 is part of Nest.js, see: https://github.com/nestjs/nest/issues/5676
 export class SocketIoAdapter extends AbstractWsAdapter {
-  constructor(
-    appOrHttpServer?: INestApplicationContext | any,
-    private readonly corsOrigins = ['http://localhost:8000'],
-  ) {
+  constructor(appOrHttpServer?: INestApplicationContext | any) {
     super(appOrHttpServer);
   }
 
@@ -36,9 +35,8 @@ export class SocketIoAdapter extends AbstractWsAdapter {
     if (this.httpServer && port === 0) {
       const s = new Server(this.httpServer, {
         cors: {
-          origin: this.corsOrigins,
+          origin: 'http://localhost:8000',
           methods: ['GET', 'POST'],
-          credentials: true,
         },
         cookie: {
           httpOnly: true,
@@ -83,8 +81,7 @@ export class SocketIoAdapter extends AbstractWsAdapter {
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  public mapPayload(payload: any): { data: any; ack?: Function } {
+  public mapPayload(payload: any): { data: any; ack?: () => any } {
     if (!Array.isArray(payload)) {
       return { data: payload };
     }

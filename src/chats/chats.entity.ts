@@ -11,30 +11,15 @@ import {
 } from 'typeorm';
 @Entity()
 export class Chat {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
-  //   @Column({ nullable: true })
-  //   userId: string;
-  //   @Column({ nullable: true })
-  //   userId: string;
+  @Column()
+  display_name!: string;
 
-  @ManyToMany((type) => User, (user) => user.chats, { cascade: true })
-  @JoinTable({
-    name: 'chat_user',
-    joinColumn: {
-      name: 'chat',
-      referencedColumnName: 'id',
-    },
-    inverseJoinColumn: {
-      name: 'user',
-      referencedColumnName: 'id',
-    },
-  })
-  users!: User[];
+  @Column({ nullable: true })
+  photo_url!: string;
 
   @OneToMany((type) => Message, (message) => message.chat)
   messages!: Message[];
-
-  //   @ManyToOne((type) => User, user => user.)
 }

@@ -1,73 +1,112 @@
+import { Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   ConnectedSocket,
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-  WsException,
-  WsResponse,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Chat } from 'src/chats/chats.entity';
-import { Contact } from 'src/contacts/contacts.entity';
 import { User } from 'src/users/user.entity';
 import { Repository } from 'typeorm';
+import { AuthSocketDto } from './interfaces/AuthSocket.dto';
 import { SendMessageDto } from './interfaces/sendMessageDto';
-@WebSocketGateway()
+import { Message } from './messages.entity';
+@WebSocketGateway(3001)
 export class MessagesGateway
-  implements OnGatewayConnection, OnGatewayDisconnect {
+  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit {
   @WebSocketServer()
   server!: Server;
   roomId!: string;
 
+  private logger: Logger = new Logger('MessageGateway');
+
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-    @InjectRepository(Chat)
-    private chatsRepository: Repository<Chat>,
+    @InjectRepository(Message)
+    private messagesRepository: Repository<Message>,
   ) {}
 
-  async handleConnection(socket: Socket) {
-    const uid = socket.handshake.auth.uid as string;
-    const user = await this.usersRepository.findOne(
-      { uid },
-      { relations: ['chats'] },
-    );
+  @SubscribeMessage('AUTH_SOCKET')
+  async authSocket(
+    @MessageBody() data: AuthSocketDto,
+    @ConnectedSocket()
+    socket: Socket,
+  ) {
+    const user = await this.usersRepository.findOne(data.id);
     if (user) {
-      socket.join(user.chats.map((chat) => `${chat.id}`));
-      socket.data = user;
+      socket.data.user = user;
+      socket.emit('AUTH_SOCKET_RESULT', { authenticated: true });
     } else {
-      throw new WsException('Invalid credentials.');
+      socket.emit('AUTH_SOCKET_RESULT', { authenticated: false });
     }
   }
 
-  // @SubscribeMessage('SEND_MESSAGE')
-  // async joinRoom(
-  //   @MessageBody() data: SendMessageDto,
-  //   @ConnectedSocket()
-  //   socket: Socket,
-  // ) {
-  //   const user = socket.data as User;
-  //   const sendMessage = () => socket.to(data.chatId).emit('GET_MESSAGE', data);
-  //   if (user.chats.find((chat) => `${chat.id}` === data.chatId)) {
-  //     sendMessage();
-  //     return;
-  //   } else {
-  //     const chat = await this.chatsRepository.findOne(
-  //       { id: Number(data.chatId) },
-  //       { relations: ['users'] },
-  //     );
-  //     if (chat?.users.find((DBUser) => DBUser.id === user.id)) {
-  //       sendMessage();
-  //       return;
-  //     } else {
-  //       throw new WsException('NO ACCESS TO THIS ROOM');
-  //     }
-  //   }
-  // }
+  @SubscribeMessage('SEND_MESSAGE')
+  async joinRoom(
+    @MessageBody() data: SendMessageDto,
+    @ConnectedSocket()
+    socket: Socket,
+  ) {
+    const user = socket.data.user as User | undefined;
 
-  async handleDisconnect(socket: Socket) {}
+    if (user) {
+      const message = await this.addMessageToDb(data, user);
+
+      this.sendMessageToClients(
+        { ...message, chatId: data.chatId },
+        socket,
+        user,
+      );
+    } else {
+      socket.disconnect();
+    }
+  }
+
+  private addMessageToDb = (wsMessage: SendMessageDto, user: User) => {
+    const newMessage = this.messagesRepository.create({
+      chat: { id: wsMessage.chatId },
+      user: { id: user.id },
+      content: wsMessage.message,
+      sentAt: new Date(),
+    });
+
+    return this.messagesRepository.save(newMessage);
+  };
+
+  private sendMessageToClients = (
+    message: Message & { chatId: string },
+    socket: Socket,
+    user: User,
+  ) => {
+    socket.broadcast.emit('RECEIVE_MESSAGE', {
+      ...message,
+      user: {
+        display_name: user.display_name,
+        photo_url: user.photo_url,
+      },
+    });
+
+    socket.emit('SEND_MESSAGE_RESULT', {
+      ...message,
+      user: user,
+    });
+  };
+
+  public afterInit(server: Server): void {
+    return this.logger.log('Init');
+  }
+
+  public handleDisconnect(client: Socket): void {
+    return this.logger.log(`Client disconnected: ${client.id}`);
+  }
+
+  public handleConnection(client: Socket): void {
+    return this.logger.log(`Client connected: ${client.id}`);
+  }
 }

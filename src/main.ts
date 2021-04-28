@@ -11,7 +11,10 @@ import { getConnection } from 'typeorm';
 import { SocketIoAdapter } from './socket-io.adapter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    cors: { origin: 'http://localhost:8000', credentials: true },
+    cors: {
+      origin: ['http://localhost:8000'],
+      credentials: true,
+    },
   });
   app.use(cookieParser());
   const repository = getConnection().getRepository(Session);
@@ -30,7 +33,7 @@ async function bootstrap() {
       resave: true,
     }),
   );
-  app.useWebSocketAdapter(new SocketIoAdapter(app, ['http://localhost:8000']));
+  app.useWebSocketAdapter(new SocketIoAdapter(app));
   admin.initializeApp({
     credential: admin.credential.applicationDefault(),
   });

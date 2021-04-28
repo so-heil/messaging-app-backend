@@ -1,3 +1,4 @@
 export interface createChatDto {
-  phoneNumber: string;
+  name: string;
+  photo_url?: string;
 }
