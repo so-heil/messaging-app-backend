@@ -3,8 +3,6 @@ import { AppModule } from './app.module';
 import * as admin from 'firebase-admin';
 import * as cookieParser from 'cookie-parser';
 import * as session from 'express-session';
-import * as redis from 'redis';
-import * as connectRedis from 'connect-redis';
 import { TypeormStore } from 'typeorm-store';
 import { Session } from './session/session.entity';
 import { getConnection } from 'typeorm';

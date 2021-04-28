@@ -1,7 +1,5 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-
 import * as dotenv from 'dotenv';
-import { join } from 'path';
 import { Chat } from 'src/chats/chats.entity';
 import { Contact } from 'src/contacts/contacts.entity';
 import { Message } from 'src/messages/messages.entity';

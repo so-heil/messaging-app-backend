@@ -1,14 +1,5 @@
 import { Message } from 'src/messages/messages.entity';
-import { User } from 'src/users/user.entity';
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  ManyToMany,
-  OneToMany,
-  ManyToOne,
-  JoinTable,
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 @Entity()
 export class Chat {
   @PrimaryGeneratedColumn('uuid')
@@ -20,6 +11,6 @@ export class Chat {
   @Column({ nullable: true })
   photo_url!: string;
 
-  @OneToMany((type) => Message, (message) => message.chat)
+  @OneToMany(() => Message, (message) => message.chat)
   messages!: Message[];
 }

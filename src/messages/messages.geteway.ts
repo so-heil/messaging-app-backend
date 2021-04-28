@@ -98,7 +98,7 @@ export class MessagesGateway
     });
   };
 
-  public afterInit(server: Server): void {
+  public afterInit(): void {
     return this.logger.log('Init');
   }
 
