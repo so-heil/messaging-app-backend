@@ -1,3 +1,0 @@
-interface JoinRoomDto {
-  chatId: string[];
-}
